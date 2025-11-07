@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Дыши</title>
+  <meta name="description" content="Минималистичный плеер песни «Дыши»." />
+  <meta property="og:title" content="Дыши" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="./images/og-image.png" />
+  <meta name="theme-color" content="#0b1020" />
+  <style>
+    :root{--bg:#0b1020;--card:#0f162b;--text:#e2e8f0;--muted:#9aa7b9;--ring:#93c5fd;--grad1:#60a5fa;--grad2:#a78bfa}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 600px at 80% -10%,rgba(96,165,250,.18),transparent),radial-gradient(900px 500px at -10% 30%,rgba(167,139,250,.15),transparent),var(--bg);color:var(--text);min-height:100vh;display:grid;place-items:center;-webkit-font-smoothing:antialiased}
+    .card{width:min(92vw,860px);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px);border-radius:24px;padding:18px;box-shadow:0 12px 36px rgba(0,0,0,.35);}
+    .row{display:flex;gap:18px;align-items:center}
+    .art{width:140px;height:140px;border-radius:18px;background:linear-gradient(135deg,var(--grad1),var(--grad2));overflow:hidden;flex-shrink:0;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+    .art img{width:100%;height:100%;object-fit:cover;display:block}
+    .content{flex:1;min-width:0}
+    .songtitle{margin:6px 6px 12px 6px;text-align:left;font-weight:700;letter-spacing:.2px}
+    .controls{display:flex;align-items:center;gap:14px}
+    .play{--size:56px;display:inline-grid;place-items:center;width:var(--size);height:var(--size);border-radius:50%;border:0;cursor:pointer;background:radial-gradient(70% 70% at 30% 30%,rgba(255,255,255,.9),rgba(255,255,255,.75));color:#0a1222;box-shadow:0 8px 20px rgba(96,165,250,.35), inset 0 0 0 1px rgba(255,255,255,.5);transition:transform .08s ease, box-shadow .2s ease}
+    .play:hover{box-shadow:0 10px 26px rgba(96,165,250,.45), inset 0 0 0 1px rgba(255,255,255,.6)}
+    .play:active{transform:translateY(1px) scale(.99)}
+    .play:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
+    .icon{width:18px;height:18px;display:block}
+    .bar{position:relative;flex:1;height:10px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .bar>.fill{position:absolute;inset:0;width:0;background:linear-gradient(90deg,var(--grad1),var(--grad2))}
+    .bar>input[type=range]{position:absolute;inset:0;opacity:0;width:100%}
+    .times{min-width:92px;text-align:right;font-variant-numeric:tabular-nums;color:#d2d9e3}
+    @media (max-width:640px){
+      .row{align-items:stretch}
+      .art{width:110px;height:110px}
+      .play{--size:54px}
+    }
+  </style>
+</head>
+<body>
+  <section class="card">
+    <div class="row">
+      <div class="art">
+        <img src="./images/cover.jpg" alt="Обложка трека" onerror="this.style.display='none'">
+      </div>
+      <div class="content">
+        <h2 class="songtitle">Дыши</h2>
+        <div class="controls">
+          <button class="play" id="play" aria-label="Воспроизвести/Пауза" title="Воспроизвести">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7-11-7z"/></svg>
+          </button>
+          <div class="bar">
+            <div class="fill" id="fill"></div>
+            <input type="range" id="seek" min="0" max="100" step="1" aria-label="Прокрутка" />
+          </div>
+          <div class="times"><span id="cur">0:00</span> · <span id="dur">0:00</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <audio id="audio" preload="metadata" src="./audio/song.mp3"></audio>
+
+  <script>
+    const audio=document.getElementById('audio');
+    const playBtn=document.getElementById('play');
+    const seek=document.getElementById('seek');
+    const fill=document.getElementById('fill');
+    const cur=document.getElementById('cur');
+    const dur=document.getElementById('dur');
+
+    const fmt=s=>{s=Math.floor(s||0);const m=(s/60)|0;const ss=String(s%60).padStart(2,'0');return m+':'+ss;};
+
+    let playing=false;
+    function setIcon(paused){
+      playBtn.innerHTML = paused
+        ? '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7-11-7z"/></svg>'
+        : '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+      playBtn.title = paused ? 'Воспроизвести' : 'Пауза';
+    }
+
+    playBtn.addEventListener('click', ()=>{
+      if(audio.paused){ audio.play(); setIcon(false); }
+      else { audio.pause(); setIcon(true); }
+    });
+
+    audio.addEventListener('loadedmetadata', ()=>{ dur.textContent = fmt(audio.duration) });
+    audio.addEventListener('timeupdate', ()=>{
+      cur.textContent = fmt(audio.currentTime);
+      const p=(audio.currentTime/(audio.duration||1))*100; fill.style.width=p+'%'; seek.value=p;
+    });
+    seek.addEventListener('input', ()=>{ audio.currentTime=(seek.value/100)*(audio.duration||0); });
+    document.addEventListener('visibilitychange', ()=>{ if(document.hidden && !audio.paused){ audio.pause(); setIcon(true); } });
+  </script>
+</body>
+</html>
