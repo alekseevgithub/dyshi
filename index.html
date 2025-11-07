@@ -12,15 +12,48 @@
   <style>
     :root{--bg:#0b1020;--card:#0f162b;--text:#e2e8f0;--muted:#9aa7b9;--ring:#93c5fd;--grad1:#60a5fa;--grad2:#a78bfa}
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:radial-gradient(1200px 600px at 80% -10%,rgba(96,165,250,.18),transparent),radial-gradient(900px 500px at -10% 30%,rgba(167,139,250,.15),transparent),var(--bg);color:var(--text);min-height:100vh;display:grid;place-items:center;-webkit-font-smoothing:antialiased}
-    .card{width:min(92vw,860px);background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(6px);border-radius:24px;padding:18px;box-shadow:0 12px 36px rgba(0,0,0,.35);}
+    body{
+      margin:0;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background:radial-gradient(1200px 600px at 80% -10%,rgba(96,165,250,.18),transparent),
+                 radial-gradient(900px 500px at -10% 30%,rgba(167,139,250,.15),transparent),
+                 var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      -webkit-font-smoothing:antialiased;
+    }
+    .card{
+      width:min(92vw,860px);
+      background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01));
+      border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(6px);
+      border-radius:24px;
+      padding:18px;
+      box-shadow:0 12px 36px rgba(0,0,0,.35);
+    }
     .row{display:flex;gap:18px;align-items:center}
-    .art{width:140px;height:140px;border-radius:18px;background:linear-gradient(135deg,var(--grad1),var(--grad2));overflow:hidden;flex-shrink:0;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+    .art{
+      width:140px;height:140px;border-radius:18px;
+      background:linear-gradient(135deg,var(--grad1),var(--grad2));
+      overflow:hidden;flex-shrink:0;
+      box-shadow:0 10px 28px rgba(0,0,0,.35)
+    }
     .art img{width:100%;height:100%;object-fit:cover;display:block}
     .content{flex:1;min-width:0}
     .songtitle{margin:6px 6px 12px 6px;text-align:left;font-weight:700;letter-spacing:.2px}
     .controls{display:flex;align-items:center;gap:14px}
-    .play{--size:56px;display:inline-grid;place-items:center;width:var(--size);height:var(--size);border-radius:50%;border:0;cursor:pointer;background:radial-gradient(70% 70% at 30% 30%,rgba(255,255,255,.9),rgba(255,255,255,.75));color:#0a1222;box-shadow:0 8px 20px rgba(96,165,250,.35), inset 0 0 0 1px rgba(255,255,255,.5);transition:transform .08s ease, box-shadow .2s ease}
+    .play{
+      --size:56px;
+      display:inline-grid;place-items:center;
+      width:var(--size);height:var(--size);
+      border-radius:50%;border:0;cursor:pointer;
+      background:radial-gradient(70% 70% at 30% 30%,rgba(255,255,255,.9),rgba(255,255,255,.75));
+      color:#0a1222;
+      box-shadow:0 8px 20px rgba(96,165,250,.35), inset 0 0 0 1px rgba(255,255,255,.5);
+      transition:transform .08s ease, box-shadow .2s ease;
+    }
     .play:hover{box-shadow:0 10px 26px rgba(96,165,250,.45), inset 0 0 0 1px rgba(255,255,255,.6)}
     .play:active{transform:translateY(1px) scale(.99)}
     .play:focus-visible{outline:2px solid var(--ring);outline-offset:3px}
@@ -33,6 +66,28 @@
       .row{align-items:stretch}
       .art{width:110px;height:110px}
       .play{--size:54px}
+    }
+
+    /* --- сообщение под плеером, ближе и медленнее --- */
+    .message{
+      max-width:720px;
+      margin:12px auto 4px;   /* ближе к плееру */
+      text-align:center;
+      color:#dbeafe;
+      font-size:16px;
+      line-height:1.65;
+      opacity:.98;
+    }
+    .message .line{
+      display:block;
+      opacity:0;
+      transform:translateY(4px); /* меньшее смещение */
+    }
+    .message .line.reveal{
+      animation:fadeUp 1s ease-out forwards; /* медленнее анимация */
+    }
+    @keyframes fadeUp{
+      to{opacity:1;transform:translateY(0)}
     }
   </style>
 </head>
@@ -56,9 +111,17 @@
         </div>
       </div>
     </div>
+
+    <!-- Сообщение теперь прямо внутри карточки, под плеером -->
+    <div class="message" id="message">
+      <span class="line">Привет, Лисица. Не знаю как и почему, но мне захотелось сделать для тебя именно это.</span>
+      <span class="line">Пусть мой голос не звучит в песне сам, зато каждое слово — моё.</span>
+      <span class="line">Я написал текст и оживил его с помощью ИИ.</span>
+      <span class="line">Приятного прослушивания 🌙</span>
+    </div>
   </section>
 
-  <audio id="audio" preload="metadata" src="./song.mp3"></audio>
+  <audio id="audio" preload="metadata" src="./audio/song.mp3"></audio>
 
   <script>
     const audio=document.getElementById('audio');
@@ -70,7 +133,6 @@
 
     const fmt=s=>{s=Math.floor(s||0);const m=(s/60)|0;const ss=String(s%60).padStart(2,'0');return m+':'+ss;};
 
-    let playing=false;
     function setIcon(paused){
       playBtn.innerHTML = paused
         ? '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7-11-7z"/></svg>'
@@ -90,6 +152,15 @@
     });
     seek.addEventListener('input', ()=>{ audio.currentTime=(seek.value/100)*(audio.duration||0); });
     document.addEventListener('visibilitychange', ()=>{ if(document.hidden && !audio.paused){ audio.pause(); setIcon(true); } });
+
+    // --- мягкое поочерёдное появление строк, медленнее ---
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const lines = document.querySelectorAll('#message .line');
+      lines.forEach((el, i)=>{
+        el.style.animationDelay = (0.6 * i) + 's'; // медленнее шаг (было 0.25s)
+        requestAnimationFrame(()=> el.classList.add('reveal'));
+      });
+    });
   </script>
 </body>
 </html>
